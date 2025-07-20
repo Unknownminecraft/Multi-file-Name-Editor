@@ -14,7 +14,7 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 40px; /* Ensures background is visible on all sides */
+            padding: 40px; /* Ensures background is visible */
         }
 
         .page-border {
@@ -97,14 +97,27 @@
             text-align: center;
             font-weight: bold;
         }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
+        
+        /* New Vertical Input Group Styling */
+        .vertical-input-group {
+            padding: 10px;
+            border: 1px solid #e0d8c8;
+            border-radius: 8px;
             margin-bottom: 10px;
-            align-items: center;
         }
-
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .input-row label, .vertical-input-group > label {
+            font-weight: bold;
+            color: #795548;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            display: block;
+        }
         input[type="text"] {
             flex-grow: 1;
             padding: 8px;
@@ -141,25 +154,18 @@
             font-weight: bold;
         }
 
-        hr {
-            border: none;
-            border-top: 1px solid #ddd;
-            margin: 15px 0;
-        }
+        hr { border: none; border-top: 1px solid #ddd; margin: 15px 0; }
 
         .footer {
-            background-color: pink;
+            background-color: lightblue;
             padding: 10px;
             border-radius: 10px;
             text-align: center;
             margin-top: 20px;
-            color: #212121; /* New Footer Text Color */
+            color: #FFCCEA; /* New Footer Text Color */
         }
+        .footer a { color: #0000EE; font-weight: bold; }
 
-        .footer a {
-            color: #0000EE; /* Standard link color for visibility */
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -176,34 +182,40 @@
         </div>
 
         <div class="box">
-            <p class="box-text">Rename text Inside file</p>
-            <strong>Replace words:</strong>
-            <div id="content-replace-container">
-                <div class="input-group">
-                    <input type="text" placeholder="Word to replace">
-                    <input type="text" placeholder="New word">
-                    <button class="reverse-btn" title="Reverse words">🔄</button>
+            <p class="box-text">Rename text, everywhere</p>
+            <div id="everywhere-replace-container">
+                <div class="vertical-input-group">
+                     <label>Word to replace:</label>
+                    <div class="input-row">
+                        <input type="text" placeholder="Word to replace everywhere">
+                        <button class="reverse-btn" title="Reverse words">🔄</button>
+                    </div>
+                    <label>New word:</label>
+                    <div class="input-row">
+                        <input type="text" placeholder="New word everywhere">
+                    </div>
                 </div>
             </div>
+            <button id="apply-everywhere-changes" class="button">Apply Everywhere</button>
+        </div>
+
+        <div class="box">
+            <p class="box-text">Rename text Inside file</p>
+            <div id="content-replace-container">
+                </div>
             <button class="add-icon" data-target="content-replace-container" title="Add more words to replace">+</button>
             <hr>
             <strong>Delete word:</strong>
-             <div class="input-group">
-                 <input type="text" id="delete-word-input" placeholder="Word to delete completely">
+             <div class="input-row">
+                 <input type="text" id="delete-word-input" placeholder="Word to delete completely from content">
              </div>
-            <button id="apply-content-changes" class="button">Apply Changes to File Content</button>
+            <button id="apply-content-changes" class="button">Apply to File Content</button>
         </div>
 
         <div class="box">
             <p class="box-text">Replace file name</p>
-            <strong>Replace words:</strong>
              <div id="filename-replace-container">
-                <div class="input-group">
-                    <input type="text" placeholder="Word to replace in filename">
-                    <input type="text" placeholder="New word for filename">
-                    <button class="reverse-btn" title="Reverse words">🔄</button>
                 </div>
-            </div>
             <button class="add-icon" data-target="filename-replace-container" title="Add more words to replace">+</button>
             <button id="apply-filename-changes" class="button">Rename</button>
         </div>
@@ -220,48 +232,47 @@
     </div>
 
     <script>
-        // --- DOM Element References ---
+        // --- STATE MANAGEMENT ---
+        let processedFiles = []; 
+        let fileCounter = 0;
+
+        // --- DOM ELEMENT REFERENCES ---
         const fileInput = document.getElementById('file-input');
         const fileListUl = document.getElementById('file-list');
+        const applyEverywhereButton = document.getElementById('apply-everywhere-changes');
         const applyContentButton = document.getElementById('apply-content-changes');
         const applyFilenameButton = document.getElementById('apply-filename-changes');
         const downloadZipButton = document.getElementById('download-zip-button');
         const downloadFilesButton = document.getElementById('download-files-button');
+        
+        // --- INITIALIZATION ---
+        updateButtonStates();
+        // Add one initial input group to the sections that need it
+        addReplacementGroup('content-replace-container');
+        addReplacementGroup('filename-replace-container');
 
-        // --- Event Delegation for Dynamic Buttons ---
+
+        // --- EVENT DELEGATION FOR DYNAMIC BUTTONS ---
         document.body.addEventListener('click', function(event) {
-            // Handle Reverse Button Clicks
             if (event.target.classList.contains('reverse-btn')) {
-                const inputGroup = event.target.closest('.input-group');
-                const inputs = inputGroup.querySelectorAll('input[type="text"]');
-                if (inputs.length === 2) {
-                    const val1 = inputs[0].value;
-                    const val2 = inputs[1].value;
-                    inputs[0].value = val2;
-                    inputs[1].value = val1;
-                }
+                handleReverse(event.target);
             }
-            // Handle Add Icon Clicks
             if (event.target.classList.contains('add-icon')) {
-                handleAddMore(event);
+                addReplacementGroup(event.target.dataset.target);
             }
         });
 
-        // --- State Management ---
-        let processedFiles = []; // This will hold objects {id: number, name: "string", blob: Blob}
-        let fileCounter = 0;
+        // --- CORE EVENT LISTENERS ---
+        fileInput.addEventListener('change', handleFileUpload);
+        applyEverywhereButton.addEventListener('click', handleApplyEverywhere);
+        applyContentButton.addEventListener('click', handleApplyContent);
+        applyFilenameButton.addEventListener('click', handleApplyFilename);
+        downloadFilesButton.addEventListener('click', () => processedFiles.forEach(file => downloadBlob(file.blob, file.name)));
+        downloadZipButton.addEventListener('click', handleDownloadZip);
 
-        // --- Initial Button State ---
-        function updateButtonStates() {
-            const hasFiles = processedFiles.length > 0;
-            [applyContentButton, applyFilenameButton, downloadZipButton, downloadFilesButton].forEach(btn => {
-                btn.disabled = !hasFiles;
-            });
-        }
-        updateButtonStates();
 
-        // --- Event Listeners ---
-        fileInput.addEventListener('change', async (event) => {
+        // --- HANDLER FUNCTIONS ---
+        async function handleFileUpload(event) {
             const files = Array.from(event.target.files);
             if (files.length === 0) return;
 
@@ -275,13 +286,39 @@
             }
             displayFileNames();
             updateButtonStates();
-        });
+        }
 
-        applyContentButton.addEventListener('click', async () => {
+        async function handleApplyEverywhere() {
+            const container = document.getElementById('everywhere-replace-container');
+            const inputs = container.querySelectorAll('input[type="text"]');
+            const oldWord = inputs[0].value.trim();
+            const newWord = inputs[1].value;
+
+            if (!oldWord) {
+                alert('Please provide a word to replace.');
+                return;
+            }
+
+            for (const file of processedFiles) {
+                // 1. Replace content
+                let content = await file.blob.text();
+                content = content.replace(new RegExp(escapeRegExp(oldWord), 'g'), newWord);
+                file.blob = new Blob([content], { type: 'application/json' });
+
+                // 2. Replace filename
+                let fileNameWithoutExt = file.name.replace(/\.json$/, '');
+                fileNameWithoutExt = fileNameWithoutExt.replace(new RegExp(escapeRegExp(oldWord), 'g'), newWord);
+                file.name = fileNameWithoutExt + '.json';
+            }
+            displayFileNames();
+            alert(`Replaced "${oldWord}" with "${newWord}" everywhere.`);
+        }
+
+        async function handleApplyContent() {
             const replacements = getReplacementsFromContainer('content-replace-container');
             const wordToDelete = document.getElementById('delete-word-input').value.trim();
             if (replacements.length === 0 && !wordToDelete) {
-                alert('Please provide words to replace or delete inside the files.');
+                alert('Please provide words to replace or delete.');
                 return;
             }
             for (const file of processedFiles) {
@@ -291,32 +328,73 @@
                 file.blob = new Blob([content], { type: 'application/json' });
             }
             alert('Content changes have been applied.');
-        });
-        
-        applyFilenameButton.addEventListener('click', () => {
+        }
+
+        function handleApplyFilename() {
             const replacements = getReplacementsFromContainer('filename-replace-container');
             if (replacements.length === 0) {
                 alert('Please provide words to replace in the filenames.');
                 return;
             }
-            processedFiles.forEach((file) => {
+            processedFiles.forEach(file => {
                 let fileNameWithoutExt = file.name.replace(/\.json$/, '');
                 replacements.forEach(rep => fileNameWithoutExt = fileNameWithoutExt.replace(new RegExp(escapeRegExp(rep.oldWord), 'g'), rep.newWord));
                 file.name = fileNameWithoutExt + '.json';
             });
             displayFileNames();
             alert('Filename changes have been applied.');
-        });
+        }
 
-        downloadFilesButton.addEventListener('click', () => processedFiles.forEach(file => downloadBlob(file.blob, file.name)));
-
-        downloadZipButton.addEventListener('click', () => {
+        function handleDownloadZip() {
             const zip = new JSZip();
             processedFiles.forEach(file => zip.file(file.name, file.blob));
             zip.generateAsync({ type: 'blob' }).then(content => downloadBlob(content, 'processed_files.zip'));
-        });
+        }
 
-        // --- Helper Functions ---
+        // --- HELPER & UI FUNCTIONS ---
+        function addReplacementGroup(targetContainerId) {
+            const container = document.getElementById(targetContainerId);
+            const group = document.createElement('div');
+            group.className = 'vertical-input-group';
+            group.innerHTML = `
+                <label>Word to replace:</label>
+                <div class="input-row">
+                    <input type="text" placeholder="Old word">
+                    <button class="reverse-btn" title="Reverse words">🔄</button>
+                </div>
+                <label>New word:</label>
+                <div class="input-row">
+                    <input type="text" placeholder="New word">
+                </div>`;
+            container.appendChild(group);
+        }
+
+        function handleReverse(button) {
+            const group = button.closest('.vertical-input-group');
+            const inputs = group.querySelectorAll('input[type="text"]');
+            [inputs[0].value, inputs[1].value] = [inputs[1].value, inputs[0].value];
+        }
+        
+        function getReplacementsFromContainer(containerId) {
+            const replacements = [];
+            const container = document.getElementById(containerId);
+            const groups = container.querySelectorAll('.vertical-input-group');
+            groups.forEach(group => {
+                const inputs = group.querySelectorAll('input[type="text"]');
+                const oldWord = inputs[0].value.trim();
+                const newWord = inputs[1].value;
+                if (oldWord) replacements.push({ oldWord, newWord });
+            });
+            return replacements;
+        }
+
+        function updateButtonStates() {
+            const hasFiles = processedFiles.length > 0;
+            [applyEverywhereButton, applyContentButton, applyFilenameButton, downloadZipButton, downloadFilesButton].forEach(btn => {
+                btn.disabled = !hasFiles;
+            });
+        }
+        
         function displayFileNames() {
             fileListUl.innerHTML = '';
             processedFiles.forEach(file => {
@@ -332,32 +410,6 @@
             updateButtonStates();
         }
 
-        function handleAddMore(event) {
-            const targetContainerId = event.target.dataset.target;
-            const container = document.getElementById(targetContainerId);
-            const newInputs = document.createElement('div');
-            newInputs.classList.add('input-group');
-            newInputs.innerHTML = `
-                <input type="text" placeholder="Word to replace">
-                <input type="text" placeholder="New word">
-                <button class="reverse-btn" title="Reverse words">🔄</button>
-            `;
-            container.appendChild(newInputs);
-        }
-
-        function getReplacementsFromContainer(containerId) {
-            const replacements = [];
-            const container = document.getElementById(containerId);
-            const inputGroups = container.querySelectorAll('.input-group');
-            inputGroups.forEach(group => {
-                const inputs = group.querySelectorAll('input[type="text"]');
-                const oldWord = inputs[0].value.trim();
-                const newWord = inputs[1].value;
-                if (oldWord) replacements.push({ oldWord, newWord });
-            });
-            return replacements;
-        }
-        
         function downloadBlob(blob, name) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -373,6 +425,5 @@
             return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         }
     </script>
-
 </body>
 </html>

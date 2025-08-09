@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Name Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            background-color: #CDC1FF; /* New Background */
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px; /* Ensures background is visible */
+        }
+
+        .page-border {
+            background-color: #BFECFF; /* New Page Container Color */
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 800px;
+        }
+
+        h1, h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #333;
+        }
+
+        h2 {
+            color: #555;
+            font-weight: normal;
+        }
+
+        .box {
+            background-color: #FFF6E3; /* New Box Color */
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+        }
+
+        .box-text {
+            color: #5D4037; /* Dark color for good contrast */
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #2E7D32;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        .button:hover:not(:disabled) {
+            background-color: #1B5E20;
+        }
+        
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        #file-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            background-color: #f0eada;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+
+        .remove-file-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            line-height: 22px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        /* New Vertical Input Groloa Styling */
+        .vertical-input-group {
+            padding: 10px;
+            border: 1px solid #e0d8c8;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .input-row label, .vertical-input-group > label {
+            font-weight: bold;
+            color: #795548;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            display: block;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        .add-icon {
+            font-size: 24px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            line-height: 30px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
+        .reverse-btn {
+            font-size: 18px;
+            background-color: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            line-height: 30px;
+            text-align: center;
+            flex-shrink: 0;
+            font-weight: bold;
+        }
+
+        hr { border: none; border-top: 1px solid #ddd; margin: 15px 0; }
+
+        .footer {
+            background-color: pink;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+            color: #000000; /* New Footer Text Color */
+        }
+        .footer a { color: #0000EE; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div class="page-border">
+        <h1>File Name Editor</h1>
+        <h2>Enjoy!</h2>
+
+        <div class="box">
+            <p class="box-text">Upload file</p>
+            <label for="file-input" class="button">Upload .json Files</label>
+            <input type="file" id="file-input" multiple accept="" style="display: none;">
+            <ul id="file-list" style="list-style: none; padding: 0; margin-top: 10px;"></ul>
+        </div>
+
+        <div class="box">
+            <p class="box-text">Rename text, everywhere</p>
+            <div id="everywhere-replace-container">
+                <div class="vertical-input-group">
+                     <label>Word to replace:</label>
+                    <div class="input-row">
+                        <input type="text" placeholder="Word to replace everywhere">
+                        <button class="reverse-btn" title="Reverse words">🔄</button>
+                    </div>
+                    <label>New word:</label>
+                    <div class="input-row">
+                        <input type="text" placeholder="New word everywhere">
+                    </div>
+                </div>
+            </div>
+            <button id="apply-everywhere-changes" class="button">Apply Everywhere</button>
+        </div>
+
+        <div class="box">
+            <p class="box-text">Rename text Inside file</p>
+            <div id="content-replace-container">
+                </div>
+            <button class="add-icon" data-target="content-replace-container" title="Add more words to replace">+</button>
+            <hr>
+            <strong>Delete word:</strong>
+             <div class="input-row">
+                 <input type="text" id="delete-word-input" placeholder="Word to delete completely from content">
+             </div>
+            <button id="apply-content-changes" class="button">Apply to File Content</button>
+        </div>
+
+        <div class="box">
+            <p class="box-text">Replace file name</p>
+             <div id="filename-replace-container">
+                </div>
+            <button class="add-icon" data-target="filename-replace-container" title="Add more words to replace">+</button>
+            <button id="apply-filename-changes" class="button">Rename</button>
+        </div>
+
+        <div class="box">
+            <p class="box-text">Download</p>
+            <button id="download-zip-button" class="button">Download zip</button>
+            <button id="download-files-button" class="button">Download file</button>
+        </div>
+
+        <div class="footer">
+            Made by Unknown Minecraft <a href="https://youtube.com/@decodingmnetwork?si=I8s6gNYWRPU-ISZw" target="_blank">[YouTube]</a>
+        </div>
+    </div>
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        let processedFiles = []; 
+        let fileCounter = 0;
+
+        // --- DOM ELEMENT REFERENCES ---
+        const fileInput = document.getElementById('file-input');
+        const fileListUl = document.getElementById('file-list');
+        const applyEverywhereButton = document.getElementById('apply-everywhere-changes');
+        const applyContentButton = document.getElementById('apply-content-changes');
+        const applyFilenameButton = document.getElementById('apply-filename-changes');
+        const downloadZipButton = document.getElementById('download-zip-button');
+        const downloadFilesButton = document.getElementById('download-files-button');
+        
+        // --- INITIALIZATION ---
+        updateButtonStates();
+        // Add one initial input group to the sections that need it
+        addReplacementGroup('content-replace-container');
+        addReplacementGroup('filename-replace-container');
+
+
+        // --- EVENT DELEGATION FOR DYNAMIC BUTTONS ---
+        document.body.addEventListener('click', function(event) {
+            if (event.target.classList.contains('reverse-btn')) {
+                handleReverse(event.target);
+            }
+            if (event.target.classList.contains('add-icon')) {
+                addReplacementGroup(event.target.dataset.target);
+            }
+        });
+
+        // --- CORE EVENT LISTENERS ---
+        fileInput.addEventListener('change', handleFileUpload);
+        applyEverywhereButton.addEventListener('click', handleApplyEverywhere);
+        applyContentButton.addEventListener('click', handleApplyContent);
+        applyFilenameButton.addEventListener('click', handleApplyFilename);
+        downloadFilesButton.addEventListener('click', () => processedFiles.forEach(file => downloadBlob(file.blob, file.name)));
+        downloadZipButton.addEventListener('click', handleDownloadZip);
+
+
+        // --- HANDLER FUNCTIONS ---
+        async function handleFileUpload(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+
+            for (const file of files) {
+                const content = await file.text();
+                processedFiles.push({
+                    id: fileCounter++,
+                    name: file.name,
+                    blob: new Blob([content], { type: 'application/mcfunction' })
+                });
+            }
+            displayFileNames();
+            updateButtonStates();
+        }
+
+        async function handleApplyEverywhere() {
+            const container = document.getElementById('everywhere-replace-container');
+            const inputs = container.querySelectorAll('input[type="text"]');
+            const oldWord = inputs[0].value.trim();
+            const newWord = inputs[1].value;
+
+            if (!oldWord) {
+                alert('Please provide a word to replace.');
+                return;
+            }
+
+            for (const file of processedFiles) {
+                // 1. Replace content
+                let content = await file.blob.text();
+                content = content.replace(new RegExp(escapeRegExp(oldWord), 'g'), newWord);
+                file.blob = new Blob([content], { type: 'application/mcfunction' });
+
+                // 2. Replace filename
+                let fileNameWithoutExt = file.name.replace(/\.mcfunction$/, '');
+                fileNameWithoutExt = fileNameWithoutExt.replace(new RegExp(escapeRegExp(oldWord), 'g'), newWord);
+                file.name = fileNameWithoutExt + '.mcfunction';
+            }
+            displayFileNames();
+            alert(`Replaced "${oldWord}" with "${newWord}" everywhere.`);
+        }
+
+        async function handleApplyContent() {
+            const replacements = getReplacementsFromContainer('content-replace-container');
+            const wordToDelete = document.getElementById('delete-word-input').value.trim();
+            if (replacements.length === 0 && !wordToDelete) {
+                alert('Please provide words to replace or delete.');
+                return;
+            }
+            for (const file of processedFiles) {
+                let content = await file.blob.text();
+                replacements.forEach(rep => content = content.replace(new RegExp(escapeRegExp(rep.oldWord), 'g'), rep.newWord));
+                if (wordToDelete) content = content.replace(new RegExp(escapeRegExp(wordToDelete), 'g'), '');
+                file.blob = new Blob([content], { type: 'application/mcfunction' });
+            }
+            alert('Content changes have been applied.');
+        }
+
+        function handleApplyFilename() {
+            const replacements = getReplacementsFromContainer('filename-replace-container');
+            if (replacements.length === 0) {
+                alert('Please provide words to replace in the filenames.');
+                return;
+            }
+            processedFiles.forEach(file => {
+                let fileNameWithoutExt = file.name.replace(/\.mcfunction$/, '');
+                replacements.forEach(rep => fileNameWithoutExt = fileNameWithoutExt.replace(new RegExp(escapeRegExp(rep.oldWord), 'g'), rep.newWord));
+                file.name = fileNameWithoutExt + '.mcfunction';
+            });
+            displayFileNames();
+            alert('Filename changes have been applied.');
+        }
+
+        function handleDownloadZip() {
+            const zip = new JSZip();
+            processedFiles.forEach(file => zip.file(file.name, file.blob));
+            zip.generateAsync({ type: 'blob' }).then(content => downloadBlob(content, 'processed_files.zip'));
+        }
+
+        // --- HELPER & UI FUNCTIONS ---
+        function addReplacementGroup(targetContainerId) {
+            const container = document.getElementById(targetContainerId);
+            const group = document.createElement('div');
+            group.className = 'vertical-input-group';
+            group.innerHTML = `
+                <label>Word to replace:</label>
+                <div class="input-row">
+                    <input type="text" placeholder="Old word">
+                    <button class="reverse-btn" title="Reverse words">🔄</button>
+                </div>
+                <label>New word:</label>
+                <div class="input-row">
+                    <input type="text" placeholder="New word">
+                </div>`;
+            container.appendChild(group);
+        }
+
+        function handleReverse(button) {
+            const group = button.closest('.vertical-input-group');
+            const inputs = group.querySelectorAll('input[type="text"]');
+            [inputs[0].value, inputs[1].value] = [inputs[1].value, inputs[0].value];
+        }
+        
+        function getReplacementsFromContainer(containerId) {
+            const replacements = [];
+            const container = document.getElementById(containerId);
+            const groups = container.querySelectorAll('.vertical-input-group');
+            groups.forEach(group => {
+                const inputs = group.querySelectorAll('input[type="text"]');
+                const oldWord = inputs[0].value.trim();
+                const newWord = inputs[1].value;
+                if (oldWord) replacements.push({ oldWord, newWord });
+            });
+            return replacements;
+        }
+
+        function updateButtonStates() {
+            const hasFiles = processedFiles.length > 0;
+            [applyEverywhereButton, applyContentButton, applyFilenameButton, downloadZipButton, downloadFilesButton].forEach(btn => {
+                btn.disabled = !hasFiles;
+            });
+        }
+        
+        function displayFileNames() {
+            fileListUl.innerHTML = '';
+            processedFiles.forEach(file => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${file.name}</span><button class="remove-file-btn" title="Remove ${file.name}" onclick="removeFile(${file.id})">x</button>`;
+                fileListUl.appendChild(li);
+            });
+        }
+        
+        function removeFile(fileId) {
+            processedFiles = processedFiles.filter(f => f.id !== fileId);
+            displayFileNames();
+            updateButtonStates();
+        }
+
+        function downloadBlob(blob, name) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+    </script>
+</body>
+</html>

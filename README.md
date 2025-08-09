@@ -3,6 +3,7 @@
 > [!NOTE]
 > This editor tool is made for `.json` file, may not work with other file format.
 
+> For more features see **_“Other Useful Versions"_**
 😃😃😃😃
 # • Description
 This webpage is a tool for editing multiple JSON files at once in four simple steps:

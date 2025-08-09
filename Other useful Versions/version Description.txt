@@ -1,0 +1,7 @@
+# version 5.1
+• added Edit both text inside & file.
+• line 180 "...accept=".json" sty..." changed to  "...accept=".lang" sty..."  and it accepts all types of files, lol.
+
+
+# version 5.2
+• can edit end text→ 1. upload files > in "replace file name" > enter text you want to replace in "old text" only at top > then click "rename
